@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import hashlib
 import linecache
 
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 
 from . import _config
 from ._compat import PY2, iteritems, isclass, iterkeys, metadata_proxy
@@ -417,6 +417,20 @@ def _attrs_to_tuple(obj, attrs):
     return tuple(getattr(obj, a.name) for a in attrs)
 
 
+def _create_attrs_to_tuple(attrs):
+    """
+    Create a function to return a tuple of all values of object's
+    *attrs*.
+    """
+    if len(attrs) == 0:
+        return lambda obj: ()
+    elif len(attrs) == 1:
+        attr_name = attrs[0].name
+        return lambda obj: (getattr(obj, attr_name),)
+    else:
+        return attrgetter(*[a.name for a in attrs])
+
+
 def _add_hash(cls, attrs=None):
     """
     Add a hash method to *cls*.
@@ -426,11 +440,13 @@ def _add_hash(cls, attrs=None):
                  for a in cls.__attrs_attrs__
                  if a.hash is True or (a.hash is None and a.cmp is True)]
 
+    attrs_to_tuple = _create_attrs_to_tuple(attrs)
+
     def hash_(self):
         """
         Automatically created by attrs.
         """
-        return hash(_attrs_to_tuple(self, attrs))
+        return hash(attrs_to_tuple(self))
 
     cls.__hash__ = hash_
     return cls
@@ -443,11 +459,7 @@ def _add_cmp(cls, attrs=None):
     if attrs is None:
         attrs = [a for a in cls.__attrs_attrs__ if a.cmp]
 
-    def attrs_to_tuple(obj):
-        """
-        Save us some typing.
-        """
-        return _attrs_to_tuple(obj, attrs)
+    attrs_to_tuple = _create_attrs_to_tuple(attrs)
 
     def eq(self, other):
         """
