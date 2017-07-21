@@ -410,13 +410,6 @@ else:
         return cls.__setattr__ == _frozen_setattrs
 
 
-def _attrs_to_tuple(obj, attrs):
-    """
-    Create a tuple of all values of *obj*'s *attrs*.
-    """
-    return tuple(getattr(obj, a.name) for a in attrs)
-
-
 def _create_attrs_to_tuple(attrs):
     """
     Create a function to return a tuple of all values of object's
